@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::mem::size_of;
+
 use drv0 as _;
 use drv1 as _;
 
@@ -16,12 +18,23 @@ fn main() {
 
 /* Todo: Implement it */
 fn traverse_drivers() {
-    libos::println!("\n!!! Fix it !!!\n");
+    extern "C" {
+        fn initcalls_start() -> usize;
+        fn initcalls_end() -> usize;
+    }
     // Parse range of init_calls by calling C function.
-    // display_initcalls_range(range_start, range_end);
-
-    // For each driver, display name & compatible
-    // display_drv_info(drv.name, drv.compatible);
+    unsafe {
+        let range_start = initcalls_start();
+        let range_end = initcalls_end();
+        display_initcalls_range(range_start, range_end);
+        let entries = core::slice::from_raw_parts(range_start as *const CallEntry, (range_end - range_start) / size_of::<CallEntry>());
+        for entry in entries {
+            // For each driver, display name & compatible
+            let drv = &(entry.init_fn)();
+            display_drv_info(drv.name, drv.compatible);
+        }
+        
+    }
 }
 
 fn display_initcalls_range(start: usize, end: usize) {
